@@ -1,6 +1,7 @@
 import { AppError } from "../../../../shared/errors/AppError";
 import { InMemoryUsersRepository } from "../../../users/repositories/in-memory/InMemoryUsersRepository";
 import { CreateUserUseCase } from "../../../users/useCases/createUser/CreateUserUseCase";
+import { ICreateUserDTO } from "../../../users/useCases/createUser/ICreateUserDTO";
 import { InMemoryStatementsRepository } from "../../repositories/in-memory/InMemoryStatementsRepository";
 import { OperationType } from "../createStatement/CreateStatementController";
 import { CreateStatementUseCase } from "../createStatement/CreateStatementUseCase";
@@ -12,7 +13,7 @@ let statementRepositoryInMemory: InMemoryStatementsRepository;
 let createStatementUseCase: CreateStatementUseCase;
 let getBalanceUseCase: GetBalanceUseCase;
 
-describe("Get Balance", () => {
+describe("Get balance", () => {
   beforeEach(() => {
     usersRepositoryInMemory = new InMemoryUsersRepository();
     createUserUseCase = new CreateUserUseCase(usersRepositoryInMemory);
@@ -27,20 +28,20 @@ describe("Get Balance", () => {
     );
   });
 
-  it("Should be able to get a balance from an user", async () => {
-    const user = await createUserUseCase.execute({
-      name: "User Test",
-      email: "user@test.com",
-      password: "1234"
-    });
+  it("Should be able get the balance from an user account", async () => {
+    const user: ICreateUserDTO = {
+      name: "Test User",
+      email: "test@mail.com",
+      password: "1234",
+    };
 
-    const user_id = user.id as string;
-    
+    const user_id = <string>(await createUserUseCase.execute(user)).id;
+
     await createStatementUseCase.execute({
       user_id,
       type: "deposit" as OperationType,
       amount: 100,
-      description: "Deposit test"
+      description: "Deposit test",
     });
 
     const balance = await getBalanceUseCase.execute({ user_id });
@@ -52,9 +53,9 @@ describe("Get Balance", () => {
     expect(balance.statement[0].description).toBe("Deposit test");
   });
 
-  it("Should not be able to get a balanca from a non-existent user", async () => {
+  it("Should not be able get the balance from an unexistent user account", async () => {
     expect(async () => {
-      const user_id = "fake_id";
+      const user_id = "fake_user_id";
 
       await getBalanceUseCase.execute({ user_id });
     }).rejects.toBeInstanceOf(AppError);

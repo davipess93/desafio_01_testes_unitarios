@@ -1,6 +1,7 @@
 import { AppError } from "../../../../shared/errors/AppError";
 import { InMemoryUsersRepository } from "../../../users/repositories/in-memory/InMemoryUsersRepository";
 import { CreateUserUseCase } from "../../../users/useCases/createUser/CreateUserUseCase";
+import { ICreateUserDTO } from "../../../users/useCases/createUser/ICreateUserDTO";
 import { Statement } from "../../entities/Statement";
 import { InMemoryStatementsRepository } from "../../repositories/in-memory/InMemoryStatementsRepository";
 import { OperationType } from "../createStatement/CreateStatementController";
@@ -11,9 +12,9 @@ let usersRepositoryInMemory: InMemoryUsersRepository;
 let createUserUseCase: CreateUserUseCase;
 let statementRepositoryInMemory: InMemoryStatementsRepository;
 let createStatementUseCase: CreateStatementUseCase;
-let getStatementOperationUseCase: GetStatementOperationUseCase
+let getStatementOperationUseCase: GetStatementOperationUseCase;
 
-describe("Get Statement", () => {
+describe("Get statement", () => {
   beforeEach(() => {
     usersRepositoryInMemory = new InMemoryUsersRepository();
     createUserUseCase = new CreateUserUseCase(usersRepositoryInMemory);
@@ -28,27 +29,27 @@ describe("Get Statement", () => {
     );
   });
 
-  it("Should be able to get a statement form an user", async () => {
-    const user = await createUserUseCase.execute({
-      name: "User Test",
-      email: "user@test.com",
-      password: "1234"
-    });
+  it("Should be able get an statement from an user account", async () => {
+    const user: ICreateUserDTO = {
+      name: "Test User",
+      email: "test@mail.com",
+      password: "1234",
+    };
 
-    const user_id = user.id as string;
+    const user_id = <string>(await createUserUseCase.execute(user)).id;
 
-    const createdStatement = await createStatementUseCase.execute({
+    const statement = await createStatementUseCase.execute({
       user_id,
       type: "deposit" as OperationType,
       amount: 100,
-      description: "Deposit test"
+      description: "Deposit test",
     });
 
-    const statement_id = createdStatement.id as string;
+    const statement_id = <string>statement.id;
 
     const returnedStatement = await getStatementOperationUseCase.execute({
       user_id,
-      statement_id
+      statement_id,
     });
 
     expect(returnedStatement).toBeInstanceOf(Statement);
@@ -57,41 +58,34 @@ describe("Get Statement", () => {
     expect(returnedStatement).toHaveProperty("amount", 100);
   });
 
-  it("Should not be able to get a statement form a non-existent user", async () => {
+  it("Should not be able get an statement from an unexistent user account", async () => {
     expect(async () => {
-      const user_id = "fake_id";
+      const user_id = "fake_user_id";
 
-      const createdStatement = await createStatementUseCase.execute({
-        user_id,
-        type: "deposit" as OperationType,
-        amount: 100,
-        description: "Deposit test"
-      });
-
-      const statement_id = createdStatement.id as string;
+      const statement_id = "fake_statement_id";
 
       await getStatementOperationUseCase.execute({
         user_id,
-        statement_id
+        statement_id,
       });
     }).rejects.toBeInstanceOf(AppError);
   });
 
-  it("Should not be able to get a statement form a non-existent statement", async () => {
+  it("Should not be able get an unexistent statement", async () => {
     expect(async () => {
-      const user = await createUserUseCase.execute({
-        name: "User Test",
-        email: "user@test.com",
-        password: "1234"
-      });
-  
-      const user_id = user.id as string;
+      const user: ICreateUserDTO = {
+        name: "Test User",
+        email: "test@mail.com",
+        password: "1234",
+      };
 
-      const statement_id = "fake_id";
+      const user_id = <string>(await createUserUseCase.execute(user)).id;
+
+      const statement_id = "fake_statement_id";
 
       await getStatementOperationUseCase.execute({
         user_id,
-        statement_id
+        statement_id,
       });
     }).rejects.toBeInstanceOf(AppError);
   });
